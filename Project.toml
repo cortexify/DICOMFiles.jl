@@ -1,0 +1,8 @@
+name = "DICOMFiles"
+uuid = "3194de3a-eb59-11e9-3cd1-a17cef4dedb9"
+authors = ["Ayhan Alkan <ayhan@ayhanalkan.com>", "Tarik Binar <tarik.binar@matriksdata.com>", "Veli Can Kupeli <velican.kupeli@matriksdata.com>"]
+version = "0.1.0"
+
+[deps]
+CodecZlib = "944b1d66-785c-5afd-91f1-9de20f533193"
+FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
