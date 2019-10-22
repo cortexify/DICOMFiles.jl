@@ -1,10 +1,10 @@
-import DICOMFiles: DicomParser, DicomImage
+import DICOMFiles: Parser, parse, Image, getRawData
 
 
 dcm = open("0003.DCM")
 buffer = IOBuffer(read(dcm, String))
-parser = DicomParser.Parser()
-image = DicomParser.parse(parser, buffer)
+parser = Parser()
+image = parse(parser, buffer)
 show(image)
-show(DicomImage.getRawData(image).data)
+show(getRawData(image).data)
 # println(image)

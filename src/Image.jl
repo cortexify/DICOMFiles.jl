@@ -1,5 +1,7 @@
-module DicomImage
-import DICOMFiles: DicomParserConsts, DicomUtils, DicomTag
+# module Image
+import DICOMFiles: ParserConsts, DicomUtils
+
+# include("./jl")
 
 mutable struct Image
     tags
@@ -9,7 +11,7 @@ mutable struct Image
     decompressed::Bool
     privateDataAll
     convertedPalette::Bool
-    Image() = new(Dict{String, DicomTag.Tag}(), Dict{String, Any}(), false, -1, false, nothing, false)
+    Image() = new(Dict{String, Tag}(), Dict{String, Any}(), false, -1, false, nothing, false)
 end
 
 const SLICE_DIRECTION_UNKNOWN = -1
@@ -38,8 +40,8 @@ end
 skipPaletteConversion = false
 
 function getSingleValueSafely(tag, index) 
-    if (tag && tag.value)
-        return tag.value[index]
+    if (tag && value)
+        return value[index]
     end
 
     return nothing 
@@ -47,7 +49,7 @@ end
 
 function getValueSafely(tag)
     if (tag != nothing)
-        return tag.value
+        return value
     end
 
     return nothing 
@@ -77,39 +79,39 @@ function getMajorAxisFromPatientRelativeDirectionCosine(x, y, z)
 end
 
 function getCols(image::Image)
-    return getSingleValueSafely(getTag(image, DicomTag.TAG_COLS[1], DicomTag.TAG_COLS[2]), 1)
+    return getSingleValueSafely(getTag(image, TAG_COLS[1], TAG_COLS[2]), 1)
 end
 
 function getRows(image::Image)
-    return getSingleValueSafely(getTag(image, DicomTag.TAG_ROWS[1], DicomTag.TAG_ROWS[2]), 1)
+    return getSingleValueSafely(getTag(image, TAG_ROWS[1], TAG_ROWS[2]), 1)
 end
 
 function getSeriesDescription(image::Image)
-    return getSingleValueSafely(getTag(image, DicomTag.TAG_SERIES_DESCRIPTION[1], DicomTag.TAG_SERIES_DESCRIPTION[2]), 1)
+    return getSingleValueSafely(getTag(image, TAG_SERIES_DESCRIPTION[1], TAG_SERIES_DESCRIPTION[2]), 1)
 end
 
 function getSeriesInstanceUID(image::Image)
-    return getSingleValueSafely(getTag(image, DicomTag.TAG_SERIES_INSTANCE_UID[1], DicomTag.TAG_SERIES_INSTANCE_UID[2]), 1)
+    return getSingleValueSafely(getTag(image, TAG_SERIES_INSTANCE_UID[1], TAG_SERIES_INSTANCE_UID[2]), 1)
 end
 
 function getSeriesNumber(image::Image)
-    return getSingleValueSafely(getTag(image, DicomTag.TAG_SERIES_NUMBER[1], DicomTag.TAG_SERIES_NUMBER[2]), 1)
+    return getSingleValueSafely(getTag(image, TAG_SERIES_NUMBER[1], TAG_SERIES_NUMBER[2]), 1)
 end
 
 function getEchoNumber(image::Image)
-    return getSingleValueSafely(getTag(image, DicomTag.TAG_ECHO_NUMBER[1], DicomTag.TAG_ECHO_NUMBER[2]), 1)
+    return getSingleValueSafely(getTag(image, TAG_ECHO_NUMBER[1], TAG_ECHO_NUMBER[2]), 1)
 end
 
 function getImagePosition(image::Image)
-    return getValueSafely(getTag(image, DicomTag.TAG_IMAGE_POSITION[1], DicomTag.TAG_IMAGE_POSITION[2]))
+    return getValueSafely(getTag(image, TAG_IMAGE_POSITION[1], TAG_IMAGE_POSITION[2]))
 end
 
 function getImageDirections(image::Image)
-    return getValueSafely(getTag(image, DicomTag.TAG_IMAGE_DIRECTIONS[1], DicomTag.TAG_IMAGE_DIRECTIONS[2]))
+    return getValueSafely(getTag(image, TAG_IMAGE_DIRECTIONS[1], TAG_IMAGE_DIRECTIONS[2]))
 end
 
 function getImagePositionSliceDir(image::Image, sliceDir)
-    imagePos = getValueSafely(getTag(image, DicomTag.TAG_IMAGE_POSITION[1], DicomTag.TAG_IMAGE_POSITION[2]))
+    imagePos = getValueSafely(getTag(image, TAG_IMAGE_POSITION[1], TAG_IMAGE_POSITION[2]))
     if (imagePos)
         if (sliceDir >= 1)
             return imagePos[sliceDir]
@@ -119,55 +121,55 @@ function getImagePositionSliceDir(image::Image, sliceDir)
 end
 
 function getModality(image::Image)
-    return getSingleValueSafely(getTag(image, DicomTag.TAG_MODALITY[1], DicomTag.TAG_MODALITY[2]), 1)
+    return getSingleValueSafely(getTag(image, TAG_MODALITY[1], TAG_MODALITY[2]), 1)
 end
 
 function getSliceLocation(image::Image)
-    return getSingleValueSafely(getTag(image, DicomTag.TAG_SLICE_LOCATION[1], DicomTag.TAG_SLICE_LOCATION[2]), 1)
+    return getSingleValueSafely(getTag(image, TAG_SLICE_LOCATION[1], TAG_SLICE_LOCATION[2]), 1)
 end
 
 function getSliceLocationVector(image::Image)
-    return getValueSafely(getTag(image, DicomTag.TAG_SLICE_LOCATION_VECTOR[1], DicomTag.TAG_SLICE_LOCATION_VECTOR[2]))
+    return getValueSafely(getTag(image, TAG_SLICE_LOCATION_VECTOR[1], TAG_SLICE_LOCATION_VECTOR[2]))
 end
 
 function getImageNumber(image::Image)
-    return getSingleValueSafely(getTag(image, DicomTag.TAG_IMAGE_NUM[1], DicomTag.TAG_IMAGE_NUM[2]), 1)
+    return getSingleValueSafely(getTag(image, TAG_IMAGE_NUM[1], TAG_IMAGE_NUM[2]), 1)
 end
 
 function getTemporalPosition(image::Image)
-    return getSingleValueSafely(getTag(image, DicomTag.TAG_TEMPORAL_POSITION[1], DicomTag.TAG_TEMPORAL_POSITION[2]), 1)
+    return getSingleValueSafely(getTag(image, TAG_TEMPORAL_POSITION[1], TAG_TEMPORAL_POSITION[2]), 1)
 end
 
 function getTemporalNumber(image::Image)
-    return getSingleValueSafely(getTag(image, DicomTag.TAG_NUMBER_TEMPORAL_POSITIONS[1], DicomTag.TAG_NUMBER_TEMPORAL_POSITIONS[2]), 1)
+    return getSingleValueSafely(getTag(image, TAG_NUMBER_TEMPORAL_POSITIONS[1], TAG_NUMBER_TEMPORAL_POSITIONS[2]), 1)
 end
 
 function getSliceGap(image::Image)
-    return getSingleValueSafely(getTag(image, DicomTag.TAG_SLICE_GAP[1], DicomTag.TAG_SLICE_GAP[2]), 1)
+    return getSingleValueSafely(getTag(image, TAG_SLICE_GAP[1], TAG_SLICE_GAP[2]), 1)
 end
 
 function getSliceThickness(image::Image)
-    return getSingleValueSafely(getTag(image, DicomTag.TAG_SLICE_THICKNESS[1], DicomTag.TAG_SLICE_THICKNESS[2]), 1)
+    return getSingleValueSafely(getTag(image, TAG_SLICE_THICKNESS[1], TAG_SLICE_THICKNESS[2]), 1)
 end
 
 function getImageMax(image::Image)
-    return getSingleValueSafely(getTag(image, DicomTag.TAG_IMAGE_MAX[1], DicomTag.TAG_IMAGE_MAX[2]), 1)
+    return getSingleValueSafely(getTag(image, TAG_IMAGE_MAX[1], TAG_IMAGE_MAX[2]), 1)
 end
 
 # function getImageMax(image::Image)
-#     return getSingleValueSafely(getTag(image, DicomTag.TAG_IMAGE_MIN[1], DicomTag.TAG_IMAGE_MIN[2]), 1)
+#     return getSingleValueSafely(getTag(image, TAG_IMAGE_MIN[1], TAG_IMAGE_MIN[2]), 1)
 # end
 
 function getDataScaleSlop(image::Image)
-    return getSingleValueSafely(getTag(image, DicomTag.TAG_DATA_SCALE_SLOPE[1], DicomTag.TAG_DATA_SCALE_SLOPE[2]), 1)
+    return getSingleValueSafely(getTag(image, TAG_DATA_SCALE_SLOPE[1], TAG_DATA_SCALE_SLOPE[2]), 1)
 end
 
 function getDataScaleIntercept(image::Image)
-    return getSingleValueSafely(getTag(image, DicomTag.TAG_DATA_SCALE_INTERCEPT[1], DicomTag.TAG_DATA_SCALE_INTERCEPT[2]), 1)
+    return getSingleValueSafely(getTag(image, TAG_DATA_SCALE_INTERCEPT[1], TAG_DATA_SCALE_INTERCEPT[2]), 1)
 end
 
 function getDataScaleElscint(image::Image)
-    scale = getSingleValueSafely(getTag(image, DicomTag.TAG_DATA_SCALE_ELSCINT[1], DicomTag.TAG_DATA_SCALE_ELSCINT[2]), 1)
+    scale = getSingleValueSafely(getTag(image, TAG_DATA_SCALE_ELSCINT[1], TAG_DATA_SCALE_ELSCINT[2]), 1)
 
     if (scale === nothing || scale == 0.0)
         scale = 1
@@ -184,15 +186,15 @@ function getDataScaleElscint(image::Image)
 end
 
 function getWindowWidth(image::Image)
-    return getSingleValueSafely(getTag(image, DicomTag.TAG_WINDOW_WIDTH[1], DicomTag.TAG_WINDOW_WIDTH[2]), 1)
+    return getSingleValueSafely(getTag(image, TAG_WINDOW_WIDTH[1], TAG_WINDOW_WIDTH[2]), 1)
 end
 
 function getWindowCenter(image::Image)
-    return getSingleValueSafely(getTag(image, DicomTag.TAG_WINDOW_CENTER[1], DicomTag.TAG_WINDOW_CENTER[2]), 1)
+    return getSingleValueSafely(getTag(image, TAG_WINDOW_CENTER[1], TAG_WINDOW_CENTER[2]), 1)
 end
 
 function getPixelBandwidth(image::Image)
-    return getSingleValueSafely(getTag(image, DicomTag.TAG_PIXEL_BANDWIDTH[1], DicomTag.TAG_PIXEL_BANDWIDTH[2]), 1)
+    return getSingleValueSafely(getTag(image, TAG_PIXEL_BANDWIDTH[1], TAG_PIXEL_BANDWIDTH[2]), 1)
 end
 
 
@@ -233,29 +235,29 @@ function getSeriesId(image::Image)
 end
 
 function getPixelSpacing(image::Image)
-    return getValueSafely(getTag(image, DicomTag.TAG_PIXEL_SPACING[1], DicomTag.TAG_PIXEL_SPACING[2]))
+    return getValueSafely(getTag(image, TAG_PIXEL_SPACING[1], TAG_PIXEL_SPACING[2]))
 end
 
 function getImageType(image::Image)
-    return getValueSafely(getTag(image, DicomTag.TAG_IMAGE_TYPE[1], DicomTag.TAG_IMAGE_TYPE[2]))
+    return getValueSafely(getTag(image, TAG_IMAGE_TYPE[1], TAG_IMAGE_TYPE[2]))
 end
 
 function getBitsStored(image::Image)
-    return getSingleValueSafely(getTag(image, DicomTag.TAG_BITS_STORED[1], DicomTag.TAG_BITS_STORED[2]), 1)
+    return getSingleValueSafely(getTag(image, TAG_BITS_STORED[1], TAG_BITS_STORED[2]), 1)
 end
 
 function getBitsAllocated(image::Image)
-    return getSingleValueSafely(getTag(image, DicomTag.TAG_BITS_ALLOCATED[1], DicomTag.TAG_BITS_ALLOCATED[2]), 1)
+    return getSingleValueSafely(getTag(image, TAG_BITS_ALLOCATED[1], TAG_BITS_ALLOCATED[2]), 1)
 end
 
 function getFrameTime(image::Image)
-    return getSingleValueSafely(getTag(image, DicomTag.TAG_FRAME_TIME[1], DicomTag.TAG_FRAME_TIME[2]), 1)
+    return getSingleValueSafely(getTag(image, TAG_FRAME_TIME[1], TAG_FRAME_TIME[2]), 1)
 end
 
 function getAcquisitionMatrix(image::Image)
     mat = [0, 0]
 
-    mat[1] = getSingleValueSafely(getTag(image, DicomTag.TAG_ACQUISITION_MATRIX[1], DicomTag.TAG_ACQUISITION_MATRIX[2]), 1)
+    mat[1] = getSingleValueSafely(getTag(image, TAG_ACQUISITION_MATRIX[1], TAG_ACQUISITION_MATRIX[2]), 1)
 
     if (image.privateDataAll === nothing)
         image.privateDataAll = getAllInterpretedPrivateData(image)
@@ -291,7 +293,7 @@ function getAcquisitionMatrix(image::Image)
 end
 
 function getTR(image::Image)
-    return getSingleValueSafely(getTag(image, DicomTag.TAG_TR[1], DicomTag.TAG_TR[2]), 1)
+    return getSingleValueSafely(getTag(image, TAG_TR[1], TAG_TR[2]), 1)
 end
 
 function putTag(image::Image, tag)
@@ -310,13 +312,13 @@ function putFlattenedTag(image::Image, tags, tag)
         end
     else
         if isdefined(tag, :id) && get(tags, tag.id, nothing) === nothing
-            tag[tag.id] = tag
+            tag[id] = tag
         end
     end
 end
 
 function getTag(image::Image, group, element)
-    tagId = DicomTag.createId(group, element)
+    tagId = createId(group, element)
 
     if(get(image.tags, tagId, nothing) != nothing)
         return image.tags[tagId] 
@@ -327,7 +329,7 @@ end
 
 
 function getPixelData(image::Image)
-    return image.tags[DicomTag.createId(DicomTag.TAG_PIXEL_DATA[1], DicomTag.TAG_PIXEL_DATA[2])]
+    return image.tags[createId(TAG_PIXEL_DATA[1], TAG_PIXEL_DATA[2])]
 end
 
 function getPixelDataBytes(image::Image)
@@ -340,7 +342,7 @@ function getPixelDataBytes(image::Image)
     # end
 
     # TODO 
-    return image.tags[DicomTag.createId(DicomTag.TAG_PIXEL_DATA[1], DicomTag.TAG_PIXEL_DATA[2])].value
+    return image.tags[createId(TAG_PIXEL_DATA[1], TAG_PIXEL_DATA[2])].value
 end
 
 function getRawData(image::Image)
@@ -386,7 +388,7 @@ function isCompressed(image::Image)
 end
 
 function getTransferSyntax(image::Image)
-    return getSingleValueSafely(getTag(image, DicomTag.TAG_STUDY_DATE[1], DicomTag.TAG_STUDY_DATE[2]), 1)
+    return getSingleValueSafely(getTag(image, TAG_STUDY_DATE[1], TAG_STUDY_DATE[2]), 1)
 end
 
 # function decompress(image::Image)
@@ -408,4 +410,4 @@ end
 #     end
 # end
 
-end
+# end

@@ -1,4 +1,4 @@
-module DicomParserConsts
+module ParserConsts
 
 const MAGIC_COOKIE_OFFSET = 128
 const MAGIC_COOKIE = [68, 73, 67, 77]

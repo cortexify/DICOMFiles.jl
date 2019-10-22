@@ -1,9 +1,9 @@
-module DicomParser
-
-import DICOMFiles: DicomImage, DicomTag, DicomTagDicts, DicomParserConsts, DicomUtils
+import DICOMFiles: TagDicts, ParserConsts, DicomUtils
 
 using CodecZlib
 
+include("./Tag.jl")
+include("./Image.jl")
 include("./registry.jl")
 
 mutable struct Parser
@@ -27,13 +27,13 @@ function parse(parser::Parser, data::IOBuffer)
     copyMeta = nothing
     copyDeflated = nothing
     # try
-        image = DicomImage.Image()
+        image = Image()
         offset = findFirstTagOffset(parser, data)
         tag = getNextTag(parser, data, offset, false)
         while (tag !== nothing)
-            DicomImage.putTag(image, tag)
+            putTag(image, tag)
 
-            if (DicomTag.isPixelData(tag))
+            if (isPixelData(tag))
                 break
             end
 
@@ -60,11 +60,11 @@ function parse(parser::Parser, data::IOBuffer)
 end
 
 function isMagicCookieFound(parser::Parser, data::IOBuffer)::Bool
-    offset = DicomParserConsts.MAGIC_COOKIE_OFFSET
-    magicCookieLength = length(DicomParserConsts.MAGIC_COOKIE)
+    offset = ParserConsts.MAGIC_COOKIE_OFFSET
+    magicCookieLength = length(ParserConsts.MAGIC_COOKIE)
     ret = true
     for ctr = 0:magicCookieLength - 1
-        if (DicomUtils.readposition(data, offset+ ctr, UInt8, true) != DicomParserConsts.MAGIC_COOKIE[ctr+1])
+        if (DicomUtils.readposition(data, offset+ ctr, UInt8, true) != ParserConsts.MAGIC_COOKIE[ctr+1])
             break
         end
     end
@@ -74,8 +74,8 @@ end
 
 function findFirstTagOffset(parser::Parser, data::IOBuffer)
     offset = 0 
-    magicCookieLength = length(DicomParserConsts.MAGIC_COOKIE)
-    searchOffsetMax = DicomParserConsts.MAGIC_COOKIE_OFFSET * 5 
+    magicCookieLength = length(ParserConsts.MAGIC_COOKIE)
+    searchOffsetMax = ParserConsts.MAGIC_COOKIE_OFFSET * 5 
     found = false
     ctr = 0
     ctrIn = 0
@@ -84,14 +84,14 @@ function findFirstTagOffset(parser::Parser, data::IOBuffer)
 
     magicCookieFound = isMagicCookieFound(parser, data) 
     if (magicCookieFound == true)
-        offset = DicomParserConsts.MAGIC_COOKIE_OFFSET + magicCookieLength
+        offset = ParserConsts.MAGIC_COOKIE_OFFSET + magicCookieLength
     else 
         for ctr = 0:searchOffsetMax-1
             ch = DicomUtils.readposition(data, ctr, UInt8)
-            if (ch == DicomParserConsts.MAGIC_COOKIE[1])
+            if (ch == ParserConsts.MAGIC_COOKIE[1])
                 found = true
                 for ctrIn = 0:magicCookieLength-1
-                    if (DicomUtils.readposition(data, ctrIn + ctr, UInt8) != DicomParserConsts.MAGIC_COOKIE[ctrIn+1])
+                    if (DicomUtils.readposition(data, ctrIn + ctr, UInt8) != ParserConsts.MAGIC_COOKIE[ctrIn+1])
                         found = false
                     end
                 end
@@ -153,15 +153,15 @@ function getNextTag(parser::Parser, data::IOBuffer, offset, testForTag)
     # Get VR and read length
     if parser.explicit || !parser.metaFinished
         vr = DicomUtils.readpositionstring(data, offset, 2)
-        if !parser.metaFound && parser.metaFinished && !(vr in DicomParserConsts.DATA_VRS)
-            # DicomTagDicts.getVr(group, element)
+        if !parser.metaFound && parser.metaFinished && !(vr in ParserConsts.DATA_VRS)
+            # TagDicts.getVr(group, element)
             vr = getindex(registry, group, element).vr
             length = DicomUtils.readposition(data, offset, UInt32, little)
             offset += 4
             parser.explicit = false
         else 
             offset += 2
-            if (vr in DicomParserConsts.DATA_VRS)
+            if (vr in ParserConsts.DATA_VRS)
                 offset += 2
                 length = DicomUtils.readposition(data, offset, UInt32, little)
                 offset += 4
@@ -171,11 +171,11 @@ function getNextTag(parser::Parser, data::IOBuffer, offset, testForTag)
             end
         end
     else 
-        # DicomTagDicts.getVr(group, element)
+        # TagDicts.getVr(group, element)
         vr = getindex(registry, group, element).vr
         length = DicomUtils.readposition(data, offset, UInt32, little)
 
-        if length == DicomParserConsts.UNDEFINED_LENGTH
+        if length == ParserConsts.UNDEFINED_LENGTH
             vr = "SQ"
         end
 
@@ -183,15 +183,15 @@ function getNextTag(parser::Parser, data::IOBuffer, offset, testForTag)
     end
     offsetValue = offset
 
-    isPixelData = (group == DicomTag.TAG_PIXEL_DATA[1]) && (element == DicomTag.TAG_PIXEL_DATA[2]);
+    isPixelData = (group == TAG_PIXEL_DATA[1]) && (element == TAG_PIXEL_DATA[2]);
 
-    if vr === "SQ" || (isPixelData && parser.encapsulation && (vr in DicomParserConsts.DATA_VRS))
+    if vr === "SQ" || (isPixelData && parser.encapsulation && (vr in ParserConsts.DATA_VRS))
         value = parseSublist(parser, data, offset, length, vr !== "SQ")
-        if (length == DicomParserConsts.UNDEFINED_LENGTH)
+        if (length == ParserConsts.UNDEFINED_LENGTH)
             length = value[length(value) - 1].offsetEnd - offset
         end
     elseif (length > -1) && !testForTag
-        if length == DicomParserConsts.UNDEFINED_LENGTH
+        if length == ParserConsts.UNDEFINED_LENGTH
             if (isPixelData)
                 length = length(data.data) - offset
             end
@@ -202,16 +202,16 @@ function getNextTag(parser::Parser, data::IOBuffer, offset, testForTag)
 
     offset += length
 
-    tag = DicomTag.Tag(group, element, vr, value, false, offsetStart, offsetValue, offset, little)
+    tag = Tag(group, element, vr, value, false, offsetStart, offsetValue, offset, little)
 
-    if DicomTag.isTransformSyntax(tag)
-        if tag.value[1] == DicomParserConsts.TRANSFER_SYNTAX_IMPLICIT_LITTLE
+    if isTransformSyntax(tag)
+        if tag.value[1] == ParserConsts.TRANSFER_SYNTAX_IMPLICIT_LITTLE
             parser.explicit = false
             parser.littleEndian = true
-        elseif tag.value[1] == DicomParserConsts.TRANSFER_SYNTAX_EXPLICIT_BIG
+        elseif tag.value[1] == ParserConsts.TRANSFER_SYNTAX_EXPLICIT_BIG
             parser.explicit = true
             parser.littleEndian = false
-        elseif tag.value[1] == DicomParserConsts.TRANSFER_SYNTAX_COMPRESSION_DEFLATE
+        elseif tag.value[1] == ParserConsts.TRANSFER_SYNTAX_COMPRESSION_DEFLATE
             parser.needsDeflate = true
             parser.explicit = true
             parser.littleEndian = true
@@ -219,7 +219,7 @@ function getNextTag(parser::Parser, data::IOBuffer, offset, testForTag)
             parser.explicit = true
             parser.littleEndian = true
         end
-    elseif (DicomTag.isMetaLength(tag))
+    elseif (isMetaLength(tag))
         parser.metaFinishedOffset = tag.value[1] + offset
     end
 
@@ -233,9 +233,9 @@ function parseSublist(parser::Parser, data::IOBuffer, offset, length, raw)
 
     parser.level+=1
 
-    if (length == DicomParserConsts.UNDEFINED_LENGTH)
+    if (length == ParserConsts.UNDEFINED_LENGTH)
         sublistItem = parseSublistItem(parser, data, offset, raw)
-        while (!DicomTag.isSequentalDelim(sublistItem))
+        while (!isSequentalDelim(sublistItem))
             push!(tags, sublistItem)
             offset = sublistItem.offsetEnd
             sublistItem = parseSublistItem(parser, data, offset, raw)
@@ -276,10 +276,10 @@ function parseSublistItem(parser::Parser, data::IO, offset, raw)
 
     offsetValue = offset
 
-    if (length == DicomParserConsts.UNDEFINED_LENGTH)
+    if (length == ParserConsts.UNDEFINED_LENGTH)
         tag = getNextTag(parser, data, offset)
 
-        while(!DicomTag.isSublistItemDelim(tag))
+        while(!isSublistItemDelim(tag))
             push!(tags, tag)
             offset = tag.offsetEnd
             tag = getNextTag(parser, data, offset)
@@ -301,9 +301,9 @@ function parseSublistItem(parser::Parser, data::IO, offset, raw)
     end
 
     if (value != nothing)
-        sublistItemTag = DicomTag.Tag(group, element, nothing, value, false, offsetStart, offsetValue, offset, parser.littleEndian) 
+        sublistItemTag = Tag(group, element, nothing, value, false, offsetStart, offsetValue, offset, parser.littleEndian) 
     else 
-        sublistItemTag = DicomTag.Tag(group, element, nothing, tags, true, offsetStart, offsetValue, offset, parser.littleEndian)
+        sublistItemTag = Tag(group, element, nothing, tags, true, offsetStart, offsetValue, offset, parser.littleEndian)
     end
     return sublistItemTag
 end
@@ -319,7 +319,7 @@ function parseEncapsulated(parser::Parser, data::IO)
         tag = getNextTag(parser, data, offset)
 
         while(tag != nothing)
-            if DicomTag.isSublistItem(tag)
+            if isSublistItem(tag)
                 push!(tags, tag)
             end
 
@@ -332,7 +332,3 @@ function parseEncapsulated(parser::Parser, data::IO)
 
     return tags
 end
-
-
-end
-

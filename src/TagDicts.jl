@@ -1,4 +1,4 @@
-module DicomTagDicts
+module TagDicts
 
 DictsPrivate = Dict(
     0x0207 => Dict(

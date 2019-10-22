@@ -1,4 +1,4 @@
-module DicomTag
+# module Tag
 import DICOMFiles: DicomUtils
 
 struct Tag
@@ -290,9 +290,9 @@ end
 function getDoubleStringValue(rawData::IO)
     ret = []
     for str in split(read(rawData, String), '\\', keepempty=false)
-        push!(ret, parse(Float64,str))
+        push!(ret, Base.parse(Float64, string(str)))
     end
     ret
 end
 
-end
+# end

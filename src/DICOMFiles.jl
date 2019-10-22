@@ -1,11 +1,11 @@
 # import FileIO: File, @format_str
 module DICOMFiles
 
-include("./DicomTagDicts.jl")
+include("./TagDicts.jl")
 include("./DicomUtils.jl")
-include("./DicomParserConsts.jl")
-include("./DicomTag.jl")
-include("./DicomImage.jl")
-include("./DicomParser.jl")
+include("./ParserConsts.jl")
+# include("./Tag.jl")
+# include("./Image.jl")
+include("./Parser.jl")
 
 end
